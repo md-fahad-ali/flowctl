@@ -67,3 +67,35 @@ so re-check the linked pages before relying on a number.
 - https://support.google.com/flow/answer/16352836 (Flow: models and supported features)
 - https://ai.google.dev/gemini-api/docs/pricing
 - https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_Omni.ipynb
+
+## Last frame to first frame chaining (the common technique)
+
+Take the last frame of clip N, give it to the video model as the **start frame** of clip N+1, and
+describe what happens next. Repeat. It works with any image-to-video model (Kling, Luma, Grok, Flux 3
+Video, Omni "Frames to Video: First" in Flow) and is widely used to get past the 5 to 10 second limit.
+It keeps composition, camera direction and lighting far better than a text-only handoff, but not
+perfectly.
+
+What people measured and recommend (finalframe.video, Fuser's October 2026 test, Kompozy, Color Correct):
+
+- Pick a **clean** handoff frame from the last few frames: stable composition, readable subject edges,
+  no motion blur, fade or caption. End the source clip on steady lighting with motion still in progress.
+- In Fuser's test the new clip opened on the handed-off frame with about 0.94 similarity (two
+  consecutive frames of the source scored 0.95), so the join is close but not identical.
+- **Sound does not carry over.** A still frame has no audio, so the new clip gets its own mix and
+  the level can jump at the join. Match loudness, or lay one soundtrack over the whole video.
+- **Resolution can change** between clips. Scale all clips to the same size before joining.
+- **Colour drift:** a frame grabbed from 8-bit yuv420p video is already chroma-subsampled, so feeding
+  it back bakes a small shift into every hop. Export the frame losslessly (PNG) and keep hops short;
+  fix residual drift with a colour match on the new clip.
+- Keep each hop **short** (a few seconds up to one clip). Drift compounds over many hops because the
+  model only remembers a window of recent frames. Anchoring both ends (first and last frame) beats
+  leaving the ending to chance.
+- Skip the first frame of the next clip when joining, it duplicates the handoff frame.
+- When you know the whole sequence up front, the cleanest join is no join: models with long single
+  passes (for example 15 to 30 second clips) or timecoded multi-shot prompts avoid it.
+
+Sources: https://finalframe.video/ai-video-continuity-frame.html ,
+https://fuser.studio/articles/extend-ai-video-length ,
+https://kompozy.io/how-to/extend-an-ai-generated-video-clip ,
+https://colorcorrect.io/guides/export-last-frame-without-color-shift

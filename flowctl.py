@@ -15,6 +15,7 @@ Commands (all print one JSON object to stdout, logs go to stderr):
   flowctl image "prompt" [--character NAME]            # image, downloads 2K
   flowctl character create --name N --describe "..."   # or --from-asset "<image name>"; adds portrait + full body
   flowctl character list | assets | status | download [--kind video|image]
+  flowctl lastframe clip.mp4 | upload frame.png | fromframe frame.png "what happens next" [--character N]
   flowctl episode spec.json                            # create the character if missing, then build the long video
   flowctl batch jobs.json                              # list of {kind, args}, one after another
   flowctl serve [--port 8787]                          # local HTTP API for other agents
@@ -328,6 +329,60 @@ def job_extend(prompt, out="out", name=None):
     return {"file": path}
 
 
+def _jpeg_b64(path, width=720):
+    """Small JPEG as base64 so it fits in one command line (macOS ARG_MAX)."""
+    tmp = Path("/tmp") / ("flowctl_up_%d.jpg" % os.getpid())
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-vf", "scale=%d:-2" % width,
+                    "-q:v", "3", str(tmp)], check=True)
+    import base64
+    data = base64.b64encode(tmp.read_bytes()).decode()
+    tmp.unlink(missing_ok=True)
+    return data
+
+
+def upload_image(path):
+    """Add an image to the Flow project. The native file chooser is blocked in the automated browser, so we
+    capture the hidden <input type=file> that Flow creates for 'Upload' and hand it the file ourselves."""
+    open_project()
+    ev("(()=>{window.__flowctl_input=null;const o=HTMLInputElement.prototype.click;"
+       "HTMLInputElement.prototype.click=function(){if(this.type==='file'){window.__flowctl_input=this;return}return o.apply(this,arguments)};"
+       "return 'patched'})()")
+    if not click_css("button[aria-label='Add media menu']"):
+        raise FlowError("Add media menu not found")
+    time.sleep(1.2)
+    if not click_text("Upload", exact=False):
+        raise FlowError("'Upload' not found in the Add media menu")
+    time.sleep(1.5)
+    b64 = _jpeg_b64(path)
+    r = ev("(async()=>{const i=window.__flowctl_input||document.querySelector('input[type=file]');if(!i)return 'noinput';"
+           "const b=atob(%s);const a=new Uint8Array(b.length);for(let k=0;k<b.length;k++)a[k]=b.charCodeAt(k);"
+           "const f=new File([a],'frame_%d.jpg',{type:'image/jpeg'});const dt=new DataTransfer();dt.items.add(f);"
+           "i.files=dt.files;i.dispatchEvent(new Event('change',{bubbles:true}));return 'set '+i.files.length})()"
+           % (json.dumps(b64), int(time.time())))
+    if not r.startswith("set"):
+        raise FlowError("could not hand the file to Flow's upload input (%s)" % r)
+    time.sleep(6)
+    return {"uploaded": str(path)}
+
+
+def job_gen_from_frame(prompt, frame, character=None, out="out", name=None):
+    """Generate the next clip so that it starts from `frame` (the last frame of the previous clip)."""
+    upload_image(frame)
+    new_session()
+    before = tile_srcs()
+    attach_latest("Images")          # the frame we just uploaded is the newest image
+    if character:
+        mention(character)
+    focus_input()
+    insert("Use the attached image as the exact first frame of an 8 second video. Keep the same camera angle, "
+           "framing, location, lighting, time of day and the same character. Do not cut. Continue from this exact moment: "
+           + prompt)
+    submit_and_approve()
+    new_src = wait_new_asset(before, "video")
+    path = download_first_tile(out, name or ("frm_%d" % int(time.time())), "720p", src=new_src, kind="video")
+    return {"file": path, "kind": "video"}
+
+
 def plan_segments(target):
     n = max(1, -(-int(target) // CLIP_SECONDS))
     return n
@@ -335,9 +390,10 @@ def plan_segments(target):
 
 def stitch(files, target, out_file):
     lst = Path(out_file).with_suffix(".txt")
-    lst.write_text("".join("file '%s'\n" % Path(f).resolve() for f in files))
+    lst.write_text("".join("file '%s'\n%s" % (Path(f).resolve(), "inpoint 0.05\n" if k else "")
+                           for k, f in enumerate(files)))
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
-                    "-t", str(target), "-c:v", "libx264", "-crf", "18", "-c:a", "aac", str(out_file)], check=True)
+                    "-t", str(target), "-c:v", "libx264", "-crf", "18", "-af", "loudnorm=I=-18:TP=-1.5", "-c:a", "aac", str(out_file)], check=True)
     return str(out_file)
 
 
@@ -352,12 +408,15 @@ def job_long(spec, resume=False):
     beats = spec["beats"]
     if len(beats) < n:
         raise FlowError("need %d beats for %ds (8 s per clip), spec has %d" % (n, target, len(beats)))
-    mode = spec.get("mode", "extend")
+    mode = spec.get("mode", "frames")  # frames (default) | chain | extend
     for i in range(len(state["segments"]), n):
         log("segment %d/%d" % (i + 1, n))
         if i == 0 or mode == "chain":
             prompt = spec["style"].strip() + "\n\nACTION: " + beats[i].strip()
             res = job_gen(prompt, spec.get("character"), str(out), "seg%02d" % (i + 1))
+        elif mode == "frames":
+            frame = last_frame(state["segments"][-1], str(out / ("last%02d.png" % i)))
+            res = job_gen_from_frame(beats[i].strip(), frame, spec.get("character"), str(out), "seg%02d" % (i + 1))
         else:
             res = job_extend(beats[i].strip(), str(out), "seg%02d" % (i + 1))
         state["segments"].append(res["file"])
@@ -669,6 +728,16 @@ def main():
     ch.add_argument("--no-body", action="store_true")
     sub.add_parser("assets")
     sub.add_parser("status")
+    fr = sub.add_parser("lastframe", help="save the last frame of a video as a PNG")
+    fr.add_argument("video")
+    fr.add_argument("--out", default="lastframe.png")
+    nf = sub.add_parser("fromframe", help="generate a clip that starts from an image (e.g. the last frame of the previous clip)")
+    nf.add_argument("frame")
+    nf.add_argument("prompt")
+    nf.add_argument("--character")
+    nf.add_argument("--out", default=str(HOME / "out"))
+    up = sub.add_parser("upload", help="add an image to the Flow project")
+    up.add_argument("path")
     dl = sub.add_parser("download")
     dl.add_argument("--kind", choices=["video", "image"], default="video")
     dl.add_argument("--out", default=str(HOME / "out"))
@@ -691,6 +760,12 @@ def main():
             r = job_gen(a.prompt, a.character, a.out)
         elif a.cmd == "image":
             r = job_gen(a.prompt, a.character, a.out, kind="image")
+        elif a.cmd == "lastframe":
+            r = {"file": last_frame(a.video, a.out)}
+        elif a.cmd == "fromframe":
+            r = job_gen_from_frame(a.prompt, a.frame, a.character, a.out)
+        elif a.cmd == "upload":
+            r = upload_image(a.path)
         elif a.cmd == "status":
             r = status()
         elif a.cmd == "download":
