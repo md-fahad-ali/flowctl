@@ -69,7 +69,13 @@ refuses to generate if the attachment chip is missing.
 | `doctor`, `character list` | Verified against a real Flow project. |
 | `gen --character` | Verified end to end: attach character, approve, queue wait, download. The clip showed the same character. |
 | `download` | Verified. |
+| `lastframe`, `upload`, `fromframe` (last frame of clip N becomes the first frame of clip N+1) | Verified end to end through flowctl. The new clip's first frame differed from the handed-in frame by about 1/255, and scene, camera and character stayed the same. |
+| Chaining three clips (24 s) with `lastframe` + `fromframe` + the stitch step | Verified. One hop was done by hand with raw OpenCLI, one through `flowctl fromframe`. |
 | `image`, `character create`, `assets`, `extend`, `long`, `episode`, `batch`, `status`, `serve` | Written, **not yet run end to end**. Treat as untested and please report issues. |
+
+Notes from testing: OpenCLI's `upload` command cannot be used on Flow (Flow's upload input is never attached to the page, and the
+file-chooser event is blocked), so `upload` hands the file to the captured input inside the page. Attaching an image from the "+"
+picker only needs a click on its row; "Add to prompt" is for characters.
 
 ## Known limits
 

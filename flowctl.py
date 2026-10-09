@@ -108,11 +108,17 @@ def click_css(css, text=None):
 
 
 def click_text(text, exact=True):
+    """Click the entry whose text matches. For non-exact matches pick the SHORTEST text so we hit the item,
+    not a container that merely contains it."""
+    best = None
     for e in find(text=text):
         t = (e.get("text") or "").strip()
-        if (t == text) if exact else (text in t):
-            click_ref(e["ref"])
-            return True
+        ok = (t == text) if exact else (text in t)
+        if ok and (best is None or len(t) < len(best[1])):
+            best = (e["ref"], t)
+    if best:
+        click_ref(best[0])
+        return True
     return False
 
 
@@ -152,16 +158,24 @@ def open_project():
 
 def new_session():
     open_project()
-    click_css("button[aria-label='Start new session']")
+    click_css("button[aria-label='Start new session']")  # absent in the newer bottom-bar layout, that is fine
     time.sleep(1.5)
 
 
-def tile_srcs():
-    raw = ev("JSON.stringify([...document.querySelectorAll('img.thumbnail,img.image')].map(i=>i.currentSrc||i.src))")
+def tile_srcs(kind=None):
+    """Image src of every tile in the grid; kind='video' keeps only tiles with a play badge, 'image' the rest."""
+    raw = ev("JSON.stringify([...document.querySelectorAll('img.thumbnail,img.image')].map(i=>{let c=i,v=false;"
+             "for(let k=0;k<4&&c;k++){c=c.parentElement;if(c&&/play_circle/.test(c.innerText||'')){v=true;break}}"
+             "return [i.currentSrc||i.src,v]}))")
     try:
-        return json.loads(raw)
+        items = json.loads(raw)
     except Exception:
         return []
+    if kind == "video":
+        items = [x for x in items if x[1]]
+    elif kind == "image":
+        items = [x for x in items if not x[1]]
+    return [x[0] for x in items]
 
 
 def focus_input():
@@ -245,7 +259,7 @@ def wait_new_asset(before, kind, timeout=1500):
             oc("open", PROJECT)
             time.sleep(6)
             last_reload = time.time()
-        new = [s for s in tile_srcs() if s not in before]
+        new = [s for s in tile_srcs(kind) if s not in before]
         busy = bool(re.search(r"\d+%", body_tail(3000)))
         if new and not busy:
             return new[0]
@@ -302,7 +316,7 @@ def last_frame(video, out_png):
 def job_gen(prompt, character=None, out="out", name=None, kind="video"):
     """kind: 'video' (downloads 720p) or 'image' (downloads 2K)."""
     new_session()
-    before = tile_srcs()
+    before = tile_srcs(kind)
     focus_input()
     if character:
         mention(character)
@@ -316,7 +330,7 @@ def job_gen(prompt, character=None, out="out", name=None, kind="video"):
 
 def job_extend(prompt, out="out", name=None):
     new_session()
-    before = tile_srcs()
+    before = tile_srcs("video")
     attach_latest("Videos")
     focus_input()
     insert("Extend this video: " + prompt)
@@ -342,35 +356,79 @@ def _jpeg_b64(path, width=720):
 
 def upload_image(path):
     """Add an image to the Flow project. The native file chooser is blocked in the automated browser, so we
-    capture the hidden <input type=file> that Flow creates for 'Upload' and hand it the file ourselves."""
+    catch the hidden <input type=file> that Flow's 'Upload' item opens and hand it the file ourselves."""
     open_project()
-    ev("(()=>{window.__flowctl_input=null;const o=HTMLInputElement.prototype.click;"
-       "HTMLInputElement.prototype.click=function(){if(this.type==='file'){window.__flowctl_input=this;return}return o.apply(this,arguments)};"
-       "return 'patched'})()")
-    if not click_css("button[aria-label='Add media menu']"):
-        raise FlowError("Add media menu not found")
-    time.sleep(1.2)
-    if not click_text("Upload", exact=False):
-        raise FlowError("'Upload' not found in the Add media menu")
-    time.sleep(1.5)
+    name = "flowctl_%d.jpg" % int(time.time())
+    for _ in range(20):                      # wait until the page really has the Add media button
+        if find(css="button[aria-label='Add media menu']"):
+            break
+        time.sleep(1.5)
+    ev("(()=>{window.__flowctl_input=null;if(!window.__flowctl_patched){window.__flowctl_patched=1;"
+       "const o=HTMLInputElement.prototype.click;HTMLInputElement.prototype.click=function(){"
+       "if(this.type==='file'){window.__flowctl_input=this;return}return o.apply(this,arguments)}}return 1})()")
+    got = False
+    for attempt in range(3):
+        oc("keys", "Escape")
+        time.sleep(0.8)
+        if not click_css("button[aria-label='Add media menu']"):
+            raise FlowError("Add media menu not found")
+        time.sleep(2)
+        if not click_text("uploadUpload") and not click_text("Upload", exact=False):
+            continue
+        time.sleep(2)
+        if ev("window.__flowctl_input?'yes':'no'") == "yes":
+            got = True
+            break
+        log("upload input not captured, retry %d" % (attempt + 1))
+    if not got:
+        raise FlowError("Flow's Upload item did not open a file input (UI changed?)")
+    # opencli's native `upload` needs Chrome's file-chooser event, which is blocked in this automated browser
+    # ("Page.fileChooserOpened not received"), so hand the file to the captured input inside the page instead.
     b64 = _jpeg_b64(path)
-    r = ev("(async()=>{const i=window.__flowctl_input||document.querySelector('input[type=file]');if(!i)return 'noinput';"
+    r = ev("(()=>{const i=window.__flowctl_input;if(!i)return 'noinput';"
            "const b=atob(%s);const a=new Uint8Array(b.length);for(let k=0;k<b.length;k++)a[k]=b.charCodeAt(k);"
-           "const f=new File([a],'frame_%d.jpg',{type:'image/jpeg'});const dt=new DataTransfer();dt.items.add(f);"
+           "const f=new File([a],%s,{type:'image/jpeg'});const dt=new DataTransfer();dt.items.add(f);"
            "i.files=dt.files;i.dispatchEvent(new Event('change',{bubbles:true}));return 'set '+i.files.length})()"
-           % (json.dumps(b64), int(time.time())))
+           % (json.dumps(b64), json.dumps(name)))
     if not r.startswith("set"):
         raise FlowError("could not hand the file to Flow's upload input (%s)" % r)
-    time.sleep(6)
-    return {"uploaded": str(path)}
+    time.sleep(8)
+    return {"uploaded": str(path), "asset_name": name}
+
+
+def attach_asset(name):
+    """Attach a project asset by name through the ingredients (+) picker. Clicking an image row attaches it;
+    a character row needs the extra 'Add to prompt' press."""
+    if not click_css("button[aria-label='Add ingredients to the prompt box']"):
+        raise FlowError("ingredients (+) button not found in the prompt box")
+    time.sleep(2.5)
+    ok = "none"
+    for _ in range(3):
+        ok = ev("(()=>{const rows=[...document.querySelectorAll('.cdk-overlay-pane *')].filter(e=>(e.innerText||'').includes(%s)&&e.children.length<5&&e.getBoundingClientRect().height>30);"
+                "if(!rows.length)return 'none';rows[rows.length-1].click();return 'ok'})()" % json.dumps(name))
+        if ok == "ok":
+            break
+        time.sleep(2)
+    if ok != "ok":
+        raise FlowError("asset '%s' not found in the picker" % name)
+    time.sleep(1.5)
+    if find(text="Add to prompt"):
+        click_text("Add to prompt", exact=False)
+        time.sleep(1.5)
+    # verify an attachment thumbnail is now in the prompt area
+    chip = ev("(()=>{const t=document.querySelector('[contenteditable=true]');let c=t;for(let i=0;i<6&&c;i++){c=c.parentElement;"
+              "if(c&&c.querySelector('img'))return 'chip'}return 'none'})()")
+    if chip != "chip":
+        raise FlowError("'%s' was not attached to the prompt (no thumbnail in the prompt box)" % name)
 
 
 def job_gen_from_frame(prompt, frame, character=None, out="out", name=None):
     """Generate the next clip so that it starts from `frame` (the last frame of the previous clip)."""
-    upload_image(frame)
+    up = upload_image(frame)
     new_session()
-    before = tile_srcs()
-    attach_latest("Images")          # the frame we just uploaded is the newest image
+    before = tile_srcs("video")
+    focus_input()
+    attach_asset(up["asset_name"])
     if character:
         mention(character)
     focus_input()
@@ -380,7 +438,7 @@ def job_gen_from_frame(prompt, frame, character=None, out="out", name=None):
     submit_and_approve()
     new_src = wait_new_asset(before, "video")
     path = download_first_tile(out, name or ("frm_%d" % int(time.time())), "720p", src=new_src, kind="video")
-    return {"file": path, "kind": "video"}
+    return {"file": path, "kind": "video", "frame_used": str(frame)}
 
 
 def plan_segments(target):
