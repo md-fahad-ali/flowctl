@@ -62,6 +62,10 @@ portrait and a full body image. In Flow's chat, typing `@` opens the asset picke
 the character **and press "Add to prompt"**. Selecting it is not enough. flowctl does this and
 refuses to generate if the attachment chip is missing.
 
+## Agent skill
+
+`skills/flowctl/SKILL.md` teaches an AI agent how to use flowctl, including the long-video chaining workflow. Copy it to `~/.claude/skills/flowctl/` (Claude Code) or into your agent's skills folder.
+
 ## What has been tested
 
 | Feature | Status |
