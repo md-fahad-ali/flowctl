@@ -51,6 +51,8 @@ flowctl serve [--port 8787]                              # HTTP API on 127.0.0.1
 HTTP API (`serve`): `POST /jobs` with `{"kind": "gen|image|character|extend|long|episode|batch|status|download", "args": {...}}`,
 then `GET /jobs/<id>`. It binds to localhost and has **no authentication**; do not expose it.
 
+Research notes on Gemini Omni (long videos, swapping characters, cost) are in `docs/OMNI_NOTES.md`.
+
 `examples/street_sketch.json` is a three beat, 24 second spec (setup, escalation, payoff).
 
 ## Why a Character, and the one gotcha
