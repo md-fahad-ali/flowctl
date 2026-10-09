@@ -1,0 +1,18 @@
+{
+  "name": "street_sketch",
+  "target_seconds": 24,
+  "mode": "chain",
+  "character": "MyCharacter",
+  "style": "Make a 9:16 vertical live-action comedy video, 8 seconds, one continuous shot with a completely static locked-off camera at chest height, the same framing as the previous parts of this episode. Location: the same sunny European street, pale cream apartment buildings on both sides, a zebra crossing with a pedestrian light on a pole at the left, thin black streetlamps, blue sky, strong midday sun, a few cars passing now and then. The character the character is framed head to knees and fills about half the frame height so his face stays readable. He stays completely deadpan and serious the whole time and never speaks. Natural street sound only, no music, no text, no logos.",
+  "beats": [
+    "SETUP. the character stands at the kerb in front of the zebra crossing waiting for the pedestrian light, which is red. He is perfectly upright and formal. He slowly checks an imaginary pocket watch on his waistcoat, nods gravely, and puts it away. A car drives past behind him. A pigeon lands on top of his copper wig. He does not react at all, he only slowly turns his eyes toward the lens for one second, then back to the light.",
+    "ESCALATION. The pedestrian light turns green. the character begins to cross in the most ceremonial way imaginable: enormous slow exaggerated strides, chest out, one arm raised like a general leading an army, the pigeon still on his wig. A cyclist swerves around him and rings a bell, he bows to the cyclist without breaking stride. Halfway across the crossing he stops and straightens his cravat.",
+    "PAYOFF. The pedestrian light starts flashing red while he is still in the middle of the crossing and cars begin to wait and honk. the character calmly turns to the lens, sits down cross-legged on the zebra crossing, takes a tiny china teacup from his blazer pocket and sips from it with his little finger raised, the pigeon still on his head, staring flatly at the camera while a car honks behind him."
+  ],
+  "character_spec": {
+    "name": "MyCharacter",
+    "describe": "Describe your character: age, build, hair, face, outfit, any signature props. Be specific so the face and clothes stay identical.",
+    "info": "How the character behaves: always deadpan, never speaks, moves in a stiff formal way.",
+    "body": ""
+  }
+}
