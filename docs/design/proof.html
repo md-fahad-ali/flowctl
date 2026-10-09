@@ -1,0 +1,19 @@
+<!doctype html><meta charset=utf-8><link rel=stylesheet href=base.css>
+<style>
+body{width:1600px;height:650px;padding:50px 70px;background:#0b0d14}
+h2{font-size:42px;letter-spacing:-1px}.sub{color:var(--muted);font-size:21px;margin-top:6px}
+.cmp{display:flex;gap:40px;margin-top:30px;align-items:flex-start}
+.cmp .box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;width:300px}
+.cmp img{width:100%;height:330px;object-fit:cover;border-radius:10px;display:block}
+.cmp .cap{margin-top:10px;font-size:18px;color:#c8cee2}.cmp .cap b{color:#fff}
+.num{flex:1;padding:26px 10px 0 30px}.num .big{font-size:120px;font-weight:700;letter-spacing:-4px}
+.num .lbl{color:var(--muted);font-size:23px;line-height:1.45;margin-top:4px;max-width:520px}
+.eq{align-self:center;font-size:56px;color:var(--b)}
+</style>
+<h2>What was measured</h2><div class=sub>Real clips made with flowctl. Left: the frame handed in. Right: the first frame of the clip Flow generated.</div>
+<div class=cmp>
+<div class=box><img src="../img/frames/handed_in.jpg"><div class=cap><b>Handed in</b> &middot; last frame of the previous clip</div></div>
+<div class=eq>=</div>
+<div class=box><img src="../img/frames/next_first.jpg"><div class=cap><b>Generated</b> &middot; first frame of the next clip</div></div>
+<div class=num><div class="big grad">1.1/255</div><div class=lbl>mean grey-level difference between the two frames. Without the frame, text-only chaining measured 10.1/255 and changed the scene.</div></div>
+</div>

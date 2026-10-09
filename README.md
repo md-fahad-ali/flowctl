@@ -1,4 +1,4 @@
-# flowctl
+<p align="center"><img src="docs/img/hero.png" alt="flowctl: drive Google Flow from the terminal" width="100%"></p>
 
 Drive **Google Flow** from the command line, scripts and other AI agents, through your own
 logged-in Chrome using [OpenCLI](https://github.com/jackwener/opencli).
@@ -11,6 +11,16 @@ videos, and chain clips into longer videos (24, 35, 60, 80 seconds) with ffmpeg.
 > product's terms and can get an account flagged, so use it at your own risk, at a human pace, one
 > job at a time. flowctl **stops with exit code 3** when Flow shows "unusual activity", a policy
 > rejection or an error. It never retries around those and it does not try to hide automation.
+
+## How long videos are made
+
+![Last frame to first frame chaining](docs/img/workflow.png)
+
+![Measured first-frame difference](docs/img/proof.png)
+
+![A 24 second video made from three chained clips](docs/img/filmstrip.png)
+
+The frames above are real output from flowctl, not mock-ups. They come from an original comedy character used for testing.
 
 ## Requirements
 
@@ -93,3 +103,7 @@ picker only needs a click on its row; "Add to prompt" is for characters.
 ## License
 
 MIT, see `LICENSE`.
+
+## Regenerating the images
+
+The pictures are HTML designs in `docs/design/` rendered to PNG with headless Chrome: `docs/design/render.sh` (set `CHROME=...` if Chrome is not in the default macOS path).

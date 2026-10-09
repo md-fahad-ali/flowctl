@@ -1,0 +1,25 @@
+<!doctype html><meta charset=utf-8><link rel=stylesheet href=base.css>
+<style>
+body{width:1600px;height:680px;padding:56px 70px;background:#0b0d14}
+h2{font-size:46px;letter-spacing:-1px}.sub{color:var(--muted);font-size:22px;margin-top:8px}
+.row{display:flex;align-items:center;justify-content:center;gap:0;margin-top:44px}
+.clip{width:330px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
+.clip img{width:100%;height:290px;object-fit:cover;border-radius:12px;display:block}
+.clip .t{display:flex;justify-content:space-between;margin-top:12px;font-size:19px}
+.clip .t b{color:#fff}.clip .t span{color:var(--muted)}
+.arrow{width:210px;text-align:center;color:var(--b);font-size:17px}
+.arrow .line{height:3px;background:linear-gradient(90deg,var(--a),var(--b));margin:10px 14px;position:relative;border-radius:3px}
+.arrow .line:after{content:"";position:absolute;right:-2px;top:-7px;border-left:14px solid var(--b);border-top:8px solid transparent;border-bottom:8px solid transparent}
+.arrow small{color:var(--muted);display:block;font-size:15px;margin-top:6px}
+.foot{display:flex;gap:14px;justify-content:center;margin-top:36px}
+</style>
+<h2>Last frame &rarr; first frame</h2>
+<div class=sub>Each clip starts from the exact last frame of the one before, so the street, camera angle, light and character do not change.</div>
+<div class=row>
+<div class=clip><img src="../img/frames/clip1.jpg"><div class=t><b>Clip 1</b><span>0 &ndash; 8 s</span></div></div>
+<div class=arrow>flowctl lastframe<div class=line></div>flowctl fromframe<small>upload &middot; attach &middot; generate</small></div>
+<div class=clip><img src="../img/frames/clip2.jpg"><div class=t><b>Clip 2</b><span>8 &ndash; 16 s</span></div></div>
+<div class=arrow>flowctl lastframe<div class=line></div>flowctl fromframe<small>upload &middot; attach &middot; generate</small></div>
+<div class=clip><img src="../img/frames/clip3.jpg"><div class=t><b>Clip 3</b><span>16 &ndash; 24 s</span></div></div>
+</div>
+<div class=foot><span class=pill>1 / 255 first-frame difference</span><span class=pill>same character attached to every clip</span><span class=pill>duplicate frame dropped when joining</span></div>

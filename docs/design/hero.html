@@ -1,0 +1,31 @@
+<!doctype html><meta charset=utf-8><link rel=stylesheet href=base.css>
+<style>
+body{width:1600px;height:640px;position:relative;overflow:hidden;background:radial-gradient(900px 500px at 85% 10%,#2a1f66 0,transparent 60%),radial-gradient(700px 500px at 5% 100%,#0e3a33 0,transparent 60%),#0b0d14}
+.wrap{padding:70px 80px;display:flex;justify-content:space-between;align-items:center;height:100%}
+h1{font-size:104px;letter-spacing:-3px;line-height:1}
+.tag{font-size:31px;color:#b9bfd4;margin-top:22px;max-width:760px;line-height:1.35}
+.pills{margin-top:34px;display:flex;gap:12px}
+.term{width:640px;background:#0a0c12;border:1px solid #2a3046;border-radius:16px;box-shadow:0 30px 80px #0009;overflow:hidden}
+.bar{height:38px;background:#151927;display:flex;align-items:center;gap:8px;padding-left:16px}
+.dot{width:12px;height:12px;border-radius:50%}
+.body{padding:22px 24px;font-size:19px;line-height:1.7;color:#cfd5ea}
+.p{color:#22d3a6}.k{color:#ffb454}.d{color:#6b7391}
+.strip{position:absolute;right:80px;bottom:40px;display:flex;gap:10px}
+.strip img{width:86px;height:150px;object-fit:cover;border-radius:10px;border:1px solid #2a3046}
+</style>
+<div class=wrap><div>
+<h1><span class=grad>flowctl</span></h1>
+<div class=tag>Drive Google Flow from the terminal. Consistent characters, and long videos chained frame by frame.</div>
+<div class=pills><span class=pill>OpenCLI</span><span class=pill>Python stdlib only</span><span class=pill>MIT</span><span class=pill>Agent skill included</span></div>
+</div>
+<div class="term mono"><div class=bar><i class=dot style=background:#ff5f57></i><i class=dot style=background:#febc2e></i><i class=dot style=background:#28c840></i></div>
+<div class=body>
+<div><span class=p>$</span> flowctl gen <span class=k>"..."</span> --character <span class=k>"Sir Clive"</span></div>
+<div class=d># clip 1, 8 s</div>
+<div><span class=p>$</span> flowctl lastframe clip1.mp4</div>
+<div><span class=p>$</span> flowctl fromframe last1.png <span class=k>"..."</span></div>
+<div class=d># clip 2 starts from that exact frame</div>
+<div><span class=p>$</span> flowctl lastframe clip2.mp4</div>
+<div><span class=p>$</span> flowctl fromframe last2.png <span class=k>"..."</span></div>
+<div class=d># clip 3 &rarr; one 24 s video</div>
+</div></div></div>

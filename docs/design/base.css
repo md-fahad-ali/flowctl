@@ -1,0 +1,6 @@
+:root{--bg:#0b0d14;--panel:#12151f;--line:#232838;--text:#e9ecf5;--muted:#8d94ab;--a:#7c5cff;--b:#22d3a6;--c:#ffb454}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Display","Inter","Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace}
+.grad{background:linear-gradient(90deg,#9b8cff,#22d3a6);-webkit-background-clip:text;color:transparent}
+.pill{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:99px;color:var(--muted);font-size:15px;background:#0f121b}
